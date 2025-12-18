@@ -1415,17 +1415,7 @@ const App = () => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="p-4">
-                                  <select
-                                    value={member.role || 'member'}
-                                    onChange={(e) => updateMemberRole(member.id, e.target.value)}
-                                    className="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]"
-                                  >
-                                    <option value="admin">Admin</option>
-                                    <option value="member">Member</option>
-                                    <option value="client">Client</option>
-                                  </select>
-                                </td>
+      
                                 <td className="p-4">
                                   <div className="flex items-center space-x-2 text-gray-400">
                                     <Calendar className="w-4 h-4" />
