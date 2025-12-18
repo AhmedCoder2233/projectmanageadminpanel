@@ -1039,8 +1039,7 @@ const App = () => {
                   placeholder={
                     activeTab === 'users' ? 'Search users by name or email...' :
                     activeTab === 'workspaces' ? 'Search workspaces...' :
-                    activeTab === 'members' ? 'Search members or workspaces...' :
-                    'Search...'
+                    activeTab === 'members' ? 'Search members or workspaces...'
                   }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
