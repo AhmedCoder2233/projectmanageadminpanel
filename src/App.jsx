@@ -1362,7 +1362,6 @@ const App = () => {
                         <tr>
                           <th className="p-4 text-left">User</th>
                           <th className="p-4 text-left">Workspace</th>
-                          <th className="p-4 text-left">Role</th>
                           <th className="p-4 text-left">Joined</th>
                           <th className="p-4 text-left">Actions</th>
                         </tr>
