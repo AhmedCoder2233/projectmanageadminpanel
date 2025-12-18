@@ -117,7 +117,7 @@ const App = () => {
         .select(`
           *,
           user:profiles(id, name, email, role),
-          workspace:workspaces(id, name)
+          workspace:workspaces(id, name, created_by)
         `);
       
       setUsers(usersData || []);
