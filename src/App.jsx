@@ -831,7 +831,7 @@ const App = () => {
               </button>
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/logo.png" 
+                  src="/favicon.png" 
                   alt="Logo" 
                   className="h-8"
                   onError={(e) => {
