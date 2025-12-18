@@ -482,7 +482,7 @@ const App = () => {
         >
           <div className="text-center mb-8">
             <img 
-              src="/logo.png" 
+              src="/favicon.png" 
               alt="Logo" 
               className="h-16 mx-auto mb-4"
               onError={(e) => {
