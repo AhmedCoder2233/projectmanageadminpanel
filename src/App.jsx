@@ -213,9 +213,15 @@ const App = () => {
   };
 
   // Remove user from specific workspace only
+ // Remove user from specific workspace only
   const removeUserFromWorkspace = async (memberId, userId, workspaceId) => {
     setActionLoading(true);
     try {
+      // Check if this is the last user in the workspace
+      const workspaceMembers_count = workspaceMembers.filter(
+        member => member.workspace_id === workspaceId
+      ).length;
+      
       const { error } = await supabase
         .from('workspace_members')
         .delete()
@@ -229,8 +235,31 @@ const App = () => {
         const user = users.find(u => u.id === userId);
         const workspace = workspaces.find(w => w.id === workspaceId);
         
-        // Show success notification
-        showNotification(`${user?.name || 'User'} removed from ${workspace?.name || 'workspace'}`, 'success');
+        // If this was the last user, delete the workspace
+        if (workspaceMembers_count === 1) {
+          const { error: workspaceError } = await supabase
+            .from('workspaces')
+            .delete()
+            .eq('id', workspaceId);
+          
+          if (!workspaceError) {
+            // Update local state
+            setWorkspaces(workspaces.filter(ws => ws.id !== workspaceId));
+            showNotification(
+              `${user?.name || 'User'} removed and workspace "${workspace?.name || 'workspace'}" deleted (no members left)`,
+              'success'
+            );
+          } else {
+            showNotification(
+              `${user?.name || 'User'} removed but failed to delete empty workspace`,
+              'error'
+            );
+          }
+        } else {
+          // Show success notification for regular removal
+          showNotification(`${user?.name || 'User'} removed from ${workspace?.name || 'workspace'}`, 'success');
+        }
+        
         setShowRemoveModal(false);
         setSelectedMember(null);
       } else {
@@ -243,7 +272,6 @@ const App = () => {
       setActionLoading(false);
     }
   };
-
   // Add user to workspace
   const addUserToWorkspace = async (userId, workspaceId, role = 'member') => {
     try {
