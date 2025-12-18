@@ -1409,9 +1409,9 @@ const App = () => {
                                     <Building className="w-4 h-4 text-gray-400" />
                                     <div>
                                       <p className="font-medium">{workspace.name}</p>
-                                      <p className="text-sm text-gray-400">
-                                        Created by: {getCreatorName(workspace.created_by)}
-                                      </p>
+                                        <p className="text-gray-400 text-sm">
+                    Created by: {workspace?.created_by ? getCreatorName(workspace.created_by) : 'Unknown'}
+                  </p>
                                     </div>
                                   </div>
                                 </td>
