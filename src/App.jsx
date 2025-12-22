@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
@@ -117,7 +118,7 @@ const App = () => {
         .select(`
           *,
           user:profiles(id, name, email, role),
-          workspace:workspaces(id, name, created_by)
+          workspace:workspaces(id, name)
         `);
       
       setUsers(usersData || []);
@@ -213,15 +214,9 @@ const App = () => {
   };
 
   // Remove user from specific workspace only
- // Remove user from specific workspace only
   const removeUserFromWorkspace = async (memberId, userId, workspaceId) => {
     setActionLoading(true);
     try {
-      // Check if this is the last user in the workspace
-      const workspaceMembers_count = workspaceMembers.filter(
-        member => member.workspace_id === workspaceId
-      ).length;
-      
       const { error } = await supabase
         .from('workspace_members')
         .delete()
@@ -235,31 +230,8 @@ const App = () => {
         const user = users.find(u => u.id === userId);
         const workspace = workspaces.find(w => w.id === workspaceId);
         
-        // If this was the last user, delete the workspace
-        if (workspaceMembers_count === 1) {
-          const { error: workspaceError } = await supabase
-            .from('workspaces')
-            .delete()
-            .eq('id', workspaceId);
-          
-          if (!workspaceError) {
-            // Update local state
-            setWorkspaces(workspaces.filter(ws => ws.id !== workspaceId));
-            showNotification(
-              `${user?.name || 'User'} removed and workspace "${workspace?.name || 'workspace'}" deleted (no members left)`,
-              'success'
-            );
-          } else {
-            showNotification(
-              `${user?.name || 'User'} removed but failed to delete empty workspace`,
-              'error'
-            );
-          }
-        } else {
-          // Show success notification for regular removal
-          showNotification(`${user?.name || 'User'} removed from ${workspace?.name || 'workspace'}`, 'success');
-        }
-        
+        // Show success notification
+        showNotification(`${user?.name || 'User'} removed from ${workspace?.name || 'workspace'}`, 'success');
         setShowRemoveModal(false);
         setSelectedMember(null);
       } else {
@@ -272,6 +244,7 @@ const App = () => {
       setActionLoading(false);
     }
   };
+
   // Add user to workspace
   const addUserToWorkspace = async (userId, workspaceId, role = 'member') => {
     try {
@@ -510,7 +483,7 @@ const App = () => {
         >
           <div className="text-center mb-8">
             <img 
-              src="/favicon.png" 
+              src="/logo.png" 
               alt="Logo" 
               className="h-16 mx-auto mb-4"
               onError={(e) => {
@@ -801,19 +774,7 @@ const App = () => {
                     ))}
                 </select>
               </div>
-              
-              <div className="mb-6">
-                <label className="block text-gray-300 mb-2">Select Role</label>
-                <select
-                  value={newMemberRole}
-                  onChange={(e) => setNewMemberRole(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                  <option value="client">Client</option>
-                </select>
-              </div>
+            
               
               <div className="flex space-x-3">
                 <button
@@ -859,7 +820,7 @@ const App = () => {
               </button>
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/favicon.png" 
+                  src="/logo.png" 
                   alt="Logo" 
                   className="h-8"
                   onError={(e) => {
@@ -1067,8 +1028,8 @@ const App = () => {
                   placeholder={
                     activeTab === 'users' ? 'Search users by name or email...' :
                     activeTab === 'workspaces' ? 'Search workspaces...' :
-                    activeTab === 'members' ? 'Search members or workspaces...':
-                    "Checkout The Statistics"
+                    activeTab === 'members' ? 'Search members or workspaces...' :
+                    'Search...'
                   }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -1390,6 +1351,7 @@ const App = () => {
                         <tr>
                           <th className="p-4 text-left">User</th>
                           <th className="p-4 text-left">Workspace</th>
+                          <th className="p-4 text-left">Role</th>
                           <th className="p-4 text-left">Joined</th>
                           <th className="p-4 text-left">Actions</th>
                         </tr>
@@ -1436,13 +1398,23 @@ const App = () => {
                                     <Building className="w-4 h-4 text-gray-400" />
                                     <div>
                                       <p className="font-medium">{workspace.name}</p>
-                                        <p className="text-gray-400 text-sm">
-                    Created by: {workspace?.created_by ? getCreatorName(workspace.created_by) : 'Unknown'}
-                  </p>
+                                      <p className="text-sm text-gray-400">
+                                        Created by: {getCreatorName(workspace.created_by)}
+                                      </p>
                                     </div>
                                   </div>
                                 </td>
-      
+                                <td className="p-4">
+                                  <select
+                                    value={member.role || 'member'}
+                                    onChange={(e) => updateMemberRole(member.id, e.target.value)}
+                                    className="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]"
+                                  >
+                                    <option value="admin">Admin</option>
+                                    <option value="member">Member</option>
+                                    <option value="client">Client</option>
+                                  </select>
+                                </td>
                                 <td className="p-4">
                                   <div className="flex items-center space-x-2 text-gray-400">
                                     <Calendar className="w-4 h-4" />
