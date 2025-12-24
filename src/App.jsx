@@ -70,7 +70,6 @@ const App = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [notification, setNotification] = useState(null);
   const [showAddToWorkspaceModal, setShowAddToWorkspaceModal] = useState(false);
-  const [newMemberRole, setNewMemberRole] = useState('member');
   const [selectedUserForAdd, setSelectedUserForAdd] = useState(null);
   const [showHeaderDropdown, setShowHeaderDropdown] = useState(false);
 
@@ -174,45 +173,39 @@ const App = () => {
   };
 
   // COMPLETELY DELETE USER FROM SYSTEM
-  const deleteUser = async (userId) => {
+   const deleteUser = async (userId) => {
     setActionLoading(true);
     try {
-      // First, delete user from all workspaces (workspace_members)
-      const { error: memberError } = await supabase
-        .from('workspace_members')
-        .delete()
-        .eq('user_id', userId);
+      // Call PostgreSQL function that deletes from auth.users table
+      const { data, error } = await supabase.rpc('delete_user_completely', {
+        user_id: userId
+      });
       
-      if (memberError) {
-        console.error('Error removing user from workspaces:', memberError);
+      if (error) {
+        console.error('Error calling delete function:', error);
+        showNotification('Error deleting user: ' + error.message, 'error');
+        return;
       }
       
-      // Then delete user from profiles table
-      const { error: userError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-      
-      if (!userError) {
+      // Check result from function
+      if (data && data.success) {
         // Update local state
         setUsers(users.filter(user => user.id !== userId));
         setWorkspaceMembers(workspaceMembers.filter(member => member.user_id !== userId));
         
-        // Show success notification
-        showNotification('User deleted successfully from system!', 'success');
+        showNotification('User completely deleted from system (database + auth)! ✅', 'success');
         setShowDeleteModal(false);
         setSelectedUser(null);
       } else {
-        showNotification('Error deleting user', 'error');
+        showNotification('Error: ' + (data?.message || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
-      showNotification('Error deleting user', 'error');
+      showNotification('Error deleting user: ' + error.message, 'error');
     } finally {
       setActionLoading(false);
     }
   };
-
   // Remove user from specific workspace only
   const removeUserFromWorkspace = async (memberId, userId, workspaceId) => {
     setActionLoading(true);
