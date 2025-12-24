@@ -288,27 +288,6 @@ const App = () => {
     }
   };
 
-  // Update member role in workspace
-  const updateMemberRole = async (memberId, newRole) => {
-    try {
-      const { error } = await supabase
-        .from('workspace_members')
-        .update({ role: newRole })
-        .eq('id', memberId);
-      
-      if (!error) {
-        setWorkspaceMembers(workspaceMembers.map(member => 
-          member.id === memberId ? { ...member, role: newRole } : member
-        ));
-        showNotification('Role updated successfully!', 'success');
-      } else {
-        showNotification('Error updating role', 'error');
-      }
-    } catch (error) {
-      console.error('Error updating member role:', error);
-      showNotification('Error updating role', 'error');
-    }
-  };
 
   // DELETE COMPLETE WORKSPACE
   const deleteWorkspace = async (workspaceId) => {
@@ -398,6 +377,7 @@ const App = () => {
   // Get creator name
   const getCreatorName = (userId) => {
     const creator = users.find(u => u.id === userId);
+    console.log(`Creator Name: ${creator}`)
     return creator?.name || 'Unknown';
   };
 
@@ -455,7 +435,6 @@ const App = () => {
   const navItems = [
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
     { id: 'workspaces', label: 'Workspaces', icon: <Building className="w-5 h-5" /> },
-    { id: 'members', label: 'Workspace Members', icon: <UserCog className="w-5 h-5" /> },
     { id: 'stats', label: 'Statistics', icon: <TrendingUp className="w-5 h-5" /> },
   ];
 
@@ -1317,120 +1296,7 @@ const App = () => {
                 </motion.div>
               )}
 
-              {/* Workspace Members Tab */}
-              {activeTab === 'members' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gray-800 rounded-xl shadow-lg overflow-hidden"
-                >
-                  <div className="p-6 border-b border-gray-700">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                      <div>
-                        <h3 className="text-xl font-bold">Workspace Memberships</h3>
-                        <p className="text-gray-400">Manage user memberships across workspaces</p>
-                      </div>
-                      <div className="px-3 py-1 bg-gray-900 rounded-full text-sm">
-                        <span className="text-gray-400">Total: </span>
-                        <span className="font-bold">{workspaceMembers.length}</span>
-                        <span className="text-gray-400"> memberships</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-900">
-                        <tr>
-                          <th className="p-4 text-left">User</th>
-                          <th className="p-4 text-left">Workspace</th>
-                          <th className="p-4 text-left">Role</th>
-                          <th className="p-4 text-left">Joined</th>
-                          <th className="p-4 text-left">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {workspaceMembers
-                          .filter(member => {
-                            const user = member.user || users.find(u => u.id === member.user_id);
-                            const workspace = member.workspace || workspaces.find(w => w.id === member.workspace_id);
-                            
-                            if (!user || !workspace) return false;
-                            
-                            return (
-                              user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              workspace.name?.toLowerCase().includes(searchQuery.toLowerCase())
-                            );
-                          })
-                          .map((member) => {
-                            const user = member.user || users.find(u => u.id === member.user_id);
-                            const workspace = member.workspace || workspaces.find(w => w.id === member.workspace_id);
-                            
-                            if (!user || !workspace) return null;
-                            
-                            return (
-                              <tr key={member.id} className="border-b border-gray-700 hover:bg-gray-750 group">
-                                <td className="p-4">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                                    </div>
-                                    <div>
-                                      <p className="font-medium">{user.name}</p>
-                                      <p className="text-sm text-gray-400">{user.email}</p>
-                                      <p className="text-xs text-gray-500">
-                                        Global: {user.role}
-                                        {user.role === 'admin' && <Crown className="w-3 h-3 inline ml-1 text-yellow-500" />}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="flex items-center space-x-2">
-                                    <Building className="w-4 h-4 text-gray-400" />
-                                    <div>
-                                      <p className="font-medium">{workspace.name}</p>
-                                      <p className="text-sm text-gray-400">
-                                        Created by: {getCreatorName(workspace.created_by)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <select
-                                    value={member.role || 'member'}
-                                    onChange={(e) => updateMemberRole(member.id, e.target.value)}
-                                    className="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]"
-                                  >
-                                    <option value="admin">Admin</option>
-                                    <option value="member">Member</option>
-                                    <option value="client">Client</option>
-                                  </select>
-                                </td>
-                                <td className="p-4">
-                                  <div className="flex items-center space-x-2 text-gray-400">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>{new Date(member.created_at).toLocaleDateString()}</span>
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <button
-                                    onClick={() => handleRemoveFromWorkspace(member)}
-                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition duration-300 flex items-center space-x-2 text-sm font-medium"
-                                  >
-                                    <UserMinus className="w-4 h-4" />
-                                    <span>Remove</span>
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                </motion.div>
-              )}
+
 
               {/* Statistics Tab */}
               {activeTab === 'stats' && (
