@@ -703,80 +703,79 @@ const App = () => {
       </AnimatePresence>
 
       {/* Add User to Workspace Modal */}
-      <AnimatePresence>
-        {showAddToWorkspaceModal && selectedWorkspace && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-gray-800 rounded-xl p-6 max-w-md w-full"
-            >
-              <div className="flex items-center space-x-3 mb-4">
-                <UserCheck className="w-10 h-10 text-green-500" />
-                <div>
-                  <h3 className="text-xl font-bold">Add User to Workspace</h3>
-                  <p className="text-gray-400">Add a user to {selectedWorkspace.name}</p>
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-300 mb-2">Select User</label>
-                <select
-                  value={selectedUserForAdd?.id || ''}
-                  onChange={(e) => {
-                    const userId = e.target.value;
-                    const user = users.find(u => u.id === userId);
-                    setSelectedUserForAdd(user);
-                  }}
-                  className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a user...</option>
-                  {users
-                    .filter(user => {
-                      // Filter out users already in this workspace
-                      return !workspaceMembers.some(
-                        member => member.user_id === user.id && member.workspace_id === selectedWorkspace.id
-                      );
-                    })
-                    .map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} ({user.email}) - {user.role}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setShowAddToWorkspaceModal(false);
-                    setSelectedWorkspace(null);
-                    setSelectedUserForAdd(null);
-                  }}
-                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedUserForAdd) {
-                      addUserToWorkspace(selectedUserForAdd.id, selectedWorkspace.id, newMemberRole);
-                    } else {
-                      showNotification('Please select a user first', 'info');
-                    }
-                  }}
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition duration-300 flex items-center justify-center"
-                >
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Add to Workspace
-                </button>
-              </div>
-            </motion.div>
+  <AnimatePresence>
+  {showAddToWorkspaceModal && selectedWorkspace && (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-gray-800 rounded-xl p-6 max-w-md w-full"
+      >
+        <div className="flex items-center space-x-3 mb-4">
+          <UserCheck className="w-10 h-10 text-green-500" />
+          <div>
+            <h3 className="text-xl font-bold">Add User to Workspace</h3>
+            <p className="text-gray-400">Add a user to {selectedWorkspace.name}</p>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+        
+        <div className="mb-4">
+          <label className="block text-gray-300 mb-2">Select User</label>
+          <select
+            value={selectedUserForAdd?.id || ''}
+            onChange={(e) => {
+              const userId = e.target.value;
+              const user = users.find(u => u.id === userId);
+              setSelectedUserForAdd(user);
+            }}
+            className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a user...</option>
+            {users
+              .filter(user => {
+                // Filter out users already in this workspace
+                return !workspaceMembers.some(
+                  member => member.user_id === user.id && member.workspace_id === selectedWorkspace.id
+                );
+              })
+              .map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email}) - {user.role}
+                </option>
+              ))}
+          </select>
+        </div>
+      
+        <div className="flex space-x-3">
+          <button
+            onClick={() => {
+              setShowAddToWorkspaceModal(false);
+              setSelectedWorkspace(null);
+              setSelectedUserForAdd(null);
+            }}
+            className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition duration-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (selectedUserForAdd) {
+                addUserToWorkspace(selectedUserForAdd.id, selectedWorkspace.id, 'member'); // YAHAN CHANGE
+              } else {
+                showNotification('Please select a user first', 'info');
+              }
+            }}
+            className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition duration-300 flex items-center justify-center"
+          >
+            <UserCheck className="w-4 h-4 mr-2" />
+            Add to Workspace
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
 
       {/* Header with Navigation */}
       <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
