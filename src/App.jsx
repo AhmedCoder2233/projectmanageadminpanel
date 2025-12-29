@@ -173,57 +173,52 @@ const App = () => {
   };
 
   // COMPLETELY DELETE USER FROM SYSTEM
- const deleteUser = async (userId) => {
-  setActionLoading(true);
-  try {
-    // 1. DELETE FROM ALL RELATED TABLES FIRST
-    // workspace_invites
-    await supabase.from("workspace_invites").delete()
-      .or(`invited_user_id.eq.${userId},invited_by.eq.${userId}`);
-    
-    // workspace_members
-    await supabase.from("workspace_members").delete()
-      .eq("user_id", userId);
-    
-    // profiles
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", userId);
-    
-    if (profileError) throw profileError;
-    
-    // 2. DELETE FROM AUTH.USERS (MOST IMPORTANT!)
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (authError) {
-      // Agar admin access nahi hai to RLS policy check karo
-      console.log("Trying via RPC...");
+// COMPLETELY DELETE USER FROM SYSTEM (INCLUDING AUTH)
+  const deleteUser = async (userId) => {
+    setActionLoading(true);
+    try {
+      // Step 1: Delete from related tables first
+      await supabase.from("workspace_invites").delete()
+        .or(`invited_user_id.eq.${userId},invited_by.eq.${userId}`);
       
-      // Database function call karo
-      const { data, error: rpcError } = await supabase.rpc(
-        'delete_auth_user',
-        { user_uuid: userId }
-      );
+      await supabase.from("workspace_members").delete()
+        .eq("user_id", userId);
       
-      if (rpcError) throw rpcError;
+      await supabase.from("profiles").delete()
+        .eq("id", userId);
+      
+      // Step 2: DELETE FROM AUTH.USERS (Critical!)
+      // Try admin API first
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        console.error("Admin delete failed, trying RPC:", authError);
+        
+        // Fallback: Use database function
+        const { error: rpcError } = await supabase.rpc('delete_auth_user', { 
+          user_uuid: userId 
+        });
+        
+        if (rpcError) {
+          throw new Error(`Failed to delete from auth: ${rpcError.message}`);
+        }
+      }
+      
+      // Step 3: Update local state
+      setUsers(users.filter(user => user.id !== userId));
+      setWorkspaceMembers(workspaceMembers.filter(member => member.user_id !== userId));
+      
+      showNotification('✅ User completely deleted from system (auth + database)!', 'success');
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+      
+    } catch (error) {
+      console.error("Delete user error:", error);
+      showNotification(`❌ Error: ${error.message || 'Failed to delete user'}`, 'error');
+    } finally {
+      setActionLoading(false);
     }
-    
-    // 3. UPDATE LOCAL STATE
-    setUsers(users.filter(user => user.id !== userId));
-    setWorkspaceMembers(workspaceMembers.filter(member => member.user_id !== userId));
-    
-    showNotification('✅ User COMPLETELY deleted (auth + database)!', 'success');
-    setShowDeleteModal(false);
-    setSelectedUser(null);
-    
-  } catch (error) {
-    console.error("Delete user error:", error);
-    showNotification('❌ Error deleting user from auth system', 'error');
-  } finally {
-    setActionLoading(false);
-  }
-};
+  };
   // Remove user from specific workspace only
   const removeUserFromWorkspace = async (memberId, userId, workspaceId) => {
     setActionLoading(true);
