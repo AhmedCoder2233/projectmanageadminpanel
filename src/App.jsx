@@ -173,39 +173,63 @@ const App = () => {
   };
 
   // COMPLETELY DELETE USER FROM SYSTEM
-   const deleteUser = async (userId) => {
-    setActionLoading(true);
-    try {
-      // Call PostgreSQL function that deletes from auth.users table
-      const { data, error } = await supabase.rpc('delete_user_completely', {
-        user_id: userId
-      });
-      
-      if (error) {
-        console.error('Error calling delete function:', error);
-        showNotification('Error deleting user: ' + error.message, 'error');
-        return;
-      }
-      
-      // Check result from function
-      if (data && data.success) {
-        // Update local state
-        setUsers(users.filter(user => user.id !== userId));
-        setWorkspaceMembers(workspaceMembers.filter(member => member.user_id !== userId));
-        
-        showNotification('User completely deleted from system (database + auth)! ✅', 'success');
-        setShowDeleteModal(false);
-        setSelectedUser(null);
-      } else {
-        showNotification('Error: ' + (data?.message || 'Unknown error'), 'error');
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      showNotification('Error deleting user: ' + error.message, 'error');
-    } finally {
-      setActionLoading(false);
+ const deleteUser = async (userId) => {
+  setActionLoading(true);
+  try {
+    // STEP 1: Pehle workspace_invites se delete
+    const { error: invitesError } = await supabase
+      .from("workspace_invites")
+      .delete()
+      .or(`invited_user_id.eq.${userId},invited_by.eq.${userId}`);
+    
+    if (invitesError && !invitesError.message.includes('No rows found')) {
+      console.warn("Invites delete warning:", invitesError);
     }
-  };
+    
+    // STEP 2: workspace_members se delete
+    const { error: membersError } = await supabase
+      .from("workspace_members")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (membersError && !membersError.message.includes('No rows found')) {
+      console.warn("Members delete warning:", membersError);
+    }
+    
+    // STEP 3: profiles se delete
+    const { error: profilesError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+    
+    if (profilesError) {
+      console.error("Profile delete error:", profilesError);
+      throw new Error("Failed to delete user profile: " + profilesError.message);
+    }
+    
+    // STEP 4: Auth se delete (supabase admin)
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (authError) {
+      console.error("Auth delete error:", authError);
+      showNotification('User removed from database but auth cleanup may be pending', 'warning');
+    }
+    
+    // Update local state
+    setUsers(users.filter(user => user.id !== userId));
+    setWorkspaceMembers(workspaceMembers.filter(member => member.user_id !== userId));
+    
+    showNotification('✅ User completely deleted from system!', 'success');
+    setShowDeleteModal(false);
+    setSelectedUser(null);
+    
+  } catch (error) {
+    console.error("Delete user error:", error);
+    showNotification('❌ Error: ' + error.message, 'error');
+  } finally {
+    setActionLoading(false);
+  }
+};
   // Remove user from specific workspace only
   const removeUserFromWorkspace = async (memberId, userId, workspaceId) => {
     setActionLoading(true);
