@@ -177,31 +177,34 @@ const App = () => {
   const deleteUser = async (userId) => {
     setActionLoading(true);
     try {
-      // Step 1: Delete from related tables first
+      // Step 1: Delete from ALL related tables in correct order
+      console.log('Deleting user dependencies...');
+      
+      // Delete conversations and related data
+      await supabase.from("conversations").delete().eq("created_by", userId);
+      
+      // Delete workspace invites
       await supabase.from("workspace_invites").delete()
         .or(`invited_user_id.eq.${userId},invited_by.eq.${userId}`);
       
-      await supabase.from("workspace_members").delete()
-        .eq("user_id", userId);
+      // Delete workspace members
+      await supabase.from("workspace_members").delete().eq("user_id", userId);
       
-      await supabase.from("profiles").delete()
-        .eq("id", userId);
+      // Delete from any other tables that reference this user
+      // Add more tables here if needed (messages, tasks, etc.)
+      
+      // Delete profiles
+      await supabase.from("profiles").delete().eq("id", userId);
+      
+      console.log('Dependencies deleted, now deleting auth user...');
       
       // Step 2: DELETE FROM AUTH.USERS (Critical!)
-      // Try admin API first
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      const { error: rpcError } = await supabase.rpc('delete_auth_user', { 
+        user_uuid: userId 
+      });
       
-      if (authError) {
-        console.error("Admin delete failed, trying RPC:", authError);
-        
-        // Fallback: Use database function
-        const { error: rpcError } = await supabase.rpc('delete_auth_user', { 
-          user_uuid: userId 
-        });
-        
-        if (rpcError) {
-          throw new Error(`Failed to delete from auth: ${rpcError.message}`);
-        }
+      if (rpcError) {
+        throw new Error(`Failed to delete from auth: ${rpcError.message}`);
       }
       
       // Step 3: Update local state
